@@ -1,0 +1,50 @@
+
+pub enum TokenKind {
+    Identifier(String),
+    Text(String),
+    Number(f64),
+
+    LeftParen,
+    RightParen,
+    LeftBracket,
+    RightBracket,
+    LeftSBracket,
+    RightSBracket,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Comma,
+    Colon,
+    SemiColon,
+    Equals,
+    Dot,
+
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+
+    And,
+    Class,
+    Else,
+    False, 
+    True,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    Var,
+    While,
+
+    EOF
+}
