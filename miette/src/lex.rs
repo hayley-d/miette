@@ -1,4 +1,3 @@
-
 pub enum TokenKind {
     Identifier(String),
     Text(String),
@@ -23,16 +22,18 @@ pub enum TokenKind {
     Bang,
     BangEqual,
     Equal,
-    EqualEqual
+    EqualEqual,
     Greater,
     GreaterEqual,
     Less,
     LessEqual,
 
     And,
+    Continue,
+    Break,
     Class,
     Else,
-    False, 
+    False,
     True,
     Fun,
     For,
@@ -46,5 +47,5 @@ pub enum TokenKind {
     Var,
     While,
 
-    EOF
+    EOF,
 }
