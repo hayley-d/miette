@@ -1,4 +1,22 @@
 #[derive(Debug)]
+pub struct Token {
+    id: u128,
+    kind: TokenKind,
+    lexeme: String,
+    line: u128,
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:<10} {:<15} {:<15} {:<10}",
+            self.id, self.kind, self.lexeme, self.line
+        )
+    }
+}
+
+#[derive(Debug)]
 pub enum TokenKind {
     Identifier(String),
     Text(String),
