@@ -1,39 +1,53 @@
+use crate::error::MietteError;
+
 pub struct Tokens {
     tokens: std::collections::VecDeque<Token>,
     contents: std::collections::VecDeque<char>,
     current_line: usize,
     current_token: Option<char>,
+    token_count: usize,
 }
 
 impl Tokens {
-    pub fn new(file_name: String) -> Tokens {
+    pub fn new(file_name: String) -> Result<Tokens, Box<dyn std::error::Error>> {
         let contents: String = match std::fs::read_to_string(file_name) {
             Ok(s) => s,
-            Err(e) => {
-                eprintln!("Failed to read the file, please check the file path");
-                return tokens.tokens;
+            Err(_) => {
+                return Err(Box::new(MietteError::new(
+                    "Failed to read the file contents".to_string(),
+                )));
             }
         };
 
-        Tokens{
+        Ok(Tokens {
             tokens: std::collections::VecDeque::new(),
-            current_line: 1,
+            contents: contents.chars().collect(),
+            current_line: 0,
             current_token: None,
-        }
+            token_count: 0,
+        })
     }
 
-    pub fn advance(&mut self) -> bool {
-        self.current_token = self.tokens.pop_front();
-        
+    pub fn advance(&mut self) -> Option<char> {
+        self.current_token = self.contents.pop_front();
+
         if self.current_token.is_some() {
+            self.token_count += 1;
+
             if self.current_token.unwrap() == '\n' {
-                self.current_line = self.current_line + 1;
+                self.current_line += 1;
                 self.advance();
             }
-            return true;
+
+            return self.current_token;
         }
 
-        false
+        self.current_token
+    }
+
+    pub fn peek(&mut self) -> Option<&char> {
+        let temp: Option<&char> = self.contents.front();
+        temp
     }
 }
 
@@ -76,24 +90,18 @@ impl std::fmt::Display for Token {
 }
 
 // Read in the file and parse for tokens
-pub fn scan_tokens(file_name: String) -> std::collections::VecDeque<Token> {
-    let tokens: Tokens = Tokens::new();
-
-
-
-    let mut contents: std::collections::VecDeque<char> = contents.chars().collect();
+pub fn scan_tokens(
+    file_name: String,
+) -> Result<std::collections::VecDeque<Token>, Box<dyn std::error::Error>> {
+    let mut tokens: Tokens = Tokens::new(file_name)?;
 
     // Collects chars to be processes as a single token lexeme
     let mut buffer: std::collections::VecDeque<char> = std::collections::VecDeque::new();
+
     // Flag if currently iterating through a string "....."
     let mut is_text: bool = false;
 
-    loop {
-        let current: char = match contents.pop_front() {
-            Some(c) => c,
-            None => break
-        }
-
+    while let Some(current) = tokens.advance() {
         match current {
             '"' => {
                 if is_text {
@@ -104,24 +112,42 @@ pub fn scan_tokens(file_name: String) -> std::collections::VecDeque<Token> {
                     is_text = true;
                     continue;
                 }
-            },
-            '=' => {
-                let peek:char = match contents.front() {
-                    Some(c) => c,
-                    None => 
-                }
-
-                if peek == '=' {
-                    Token::add_token(&mut tokens, TokenKind::EqualEqual, current.to_string(), current_line);
-                } else {
-                    Token::add_token(&mut tokens,TokenKind::Equal, current.to_string(), current_line);
-                }
             }
-        }
+            '=' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Equals with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after equals but got nothing".to_string(),
+                        )));
+                    }
+                };
 
+                if *peek == '=' {
+                    // Double equals '=='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::EqualEqual,
+                        "==".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Equal,
+                        "=".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end equal '='
+            _ => {
+                continue;
+            }
+        };
     }
 
-    tokens
+    Ok(tokens.tokens)
 }
 
 #[derive(Debug)]
