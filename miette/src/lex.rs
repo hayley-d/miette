@@ -100,6 +100,8 @@ pub fn scan_tokens(
 
     // Flag if currently iterating through a string "....."
     let mut is_text: bool = false;
+    let mut is_number: bool = false;
+    let mut is_identifier: bool = false;
 
     while let Some(current) = tokens.advance() {
         match current {
@@ -110,6 +112,35 @@ pub fn scan_tokens(
                 } else {
                     // start quote
                     is_text = true;
+                    buffer = std::collections::VecDeque::new();
+                    while let Some(peek) = tokens.peek() {
+                        // If not the closing " continue
+                        if *peek != '"' || *peek != '\\' {
+                            buffer.push_back(tokens.advance().unwrap());
+                        } else if *peek == '\\' {
+                            // ignore the escape char
+                            tokens.advance();
+                            let string_current = match tokens.advance() {
+                                Some(c) => c,
+                                None => {
+                                    return Err(Box::new(MietteError::new("Tokenize Error: Expected token after escape character \\ but got nothing".to_string())));
+                                }
+                            };
+                            buffer.push_back(string_current);
+                        } else {
+                            // closing "
+                            is_text = false;
+                            let temp: String = buffer.clone().into_iter().collect();
+                            Token::add_token(
+                                &mut tokens.tokens,
+                                TokenKind::Text(temp.clone()),
+                                temp,
+                                tokens.current_line,
+                            );
+                            buffer.clear();
+                            break;
+                        }
+                    }
                     continue;
                 }
             }
@@ -141,6 +172,141 @@ pub fn scan_tokens(
                     );
                 }
             } // end equal '='
+            '>' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Gtreater with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after greater than token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // Greater equals '>='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::GreaterEqual,
+                        ">=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Greater,
+                        ">".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end greater '>'
+            '<' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Less than with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after Less Than token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // Less than equals '<='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::LessEqual,
+                        "<=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Less,
+                        "<".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end less '<'
+            '!' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Bang than with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after bang token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // bang than equals '!='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::BangEqual,
+                        "!=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Bang,
+                        "!".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end bang '!'
+            '\n' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // new line than with nothing after
+                        Token::add_token(
+                            &mut tokens.tokens,
+                            TokenKind::EOF,
+                            "EOF".to_string(),
+                            tokens.current_line,
+                        );
+                        continue;
+                    }
+                };
+
+                if *peek == '=' {
+                    // bang than equals '!='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::BangEqual,
+                        "!=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Bang,
+                        "!".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end bang '!'
+            c if c.is_ascii_digit() || c == '.' => {
+                if is_number {
+                } else {
+                    if is_text {
+                        // Part of a user string
+                    } else {
+                        // Can either be part of an identifier or number
+                        if is_identifier {
+                            buffer.push_back(c);
+                            continue;
+                        } else {
+                            // Probably start of a number
+                        }
+                    }
+                }
+            }
             _ => {
                 continue;
             }
