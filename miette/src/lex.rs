@@ -1,9 +1,82 @@
+use crate::error::MietteError;
+
+pub struct Tokens {
+    tokens: std::collections::VecDeque<Token>,
+    contents: std::collections::VecDeque<char>,
+    current_line: usize,
+    current_token: Option<char>,
+    token_count: usize,
+}
+
+impl Tokens {
+    pub fn new(file_name: String) -> Result<Tokens, Box<dyn std::error::Error>> {
+        let contents: String = match std::fs::read_to_string(file_name) {
+            Ok(s) => s,
+            Err(_) => {
+                return Err(Box::new(MietteError::new(
+                    "Failed to read the file contents".to_string(),
+                )));
+            }
+        };
+
+        Ok(Tokens {
+            tokens: std::collections::VecDeque::new(),
+            contents: contents.chars().collect(),
+            current_line: 0,
+            current_token: None,
+            token_count: 0,
+        })
+    }
+
+    pub fn advance(&mut self) -> Option<char> {
+        self.current_token = self.contents.pop_front();
+
+        if self.current_token.is_some() {
+            self.token_count += 1;
+
+            if self.current_token.unwrap() == '\n' {
+                self.current_line += 1;
+                self.advance();
+            }
+
+            return self.current_token;
+        }
+
+        self.current_token
+    }
+
+    pub fn peek(&mut self) -> Option<&char> {
+        let temp: Option<&char> = self.contents.front();
+        temp
+    }
+}
+
 #[derive(Debug)]
 pub struct Token {
-    id: u128,
+    id: usize,
     kind: TokenKind,
     lexeme: String,
-    line: u128,
+    line: usize,
+}
+
+impl Token {
+    pub fn new(id: usize, kind: TokenKind, lexeme: String, line: usize) -> Self {
+        Token {
+            id,
+            kind,
+            lexeme,
+            line,
+        }
+    }
+
+    pub fn add_token(
+        tokens: &mut std::collections::VecDeque<Token>,
+        kind: TokenKind,
+        lexeme: String,
+        line: usize,
+    ) {
+        tokens.push_back(Token::new(tokens.len(), kind, lexeme, line))
+    }
 }
 
 impl std::fmt::Display for Token {
@@ -14,6 +87,233 @@ impl std::fmt::Display for Token {
             self.id, self.kind, self.lexeme, self.line
         )
     }
+}
+
+// Read in the file and parse for tokens
+pub fn scan_tokens(
+    file_name: String,
+) -> Result<std::collections::VecDeque<Token>, Box<dyn std::error::Error>> {
+    let mut tokens: Tokens = Tokens::new(file_name)?;
+
+    // Collects chars to be processes as a single token lexeme
+    let mut buffer: std::collections::VecDeque<char> = std::collections::VecDeque::new();
+
+    // Flag if currently iterating through a string "....."
+    let mut is_text: bool = false;
+    let mut is_number: bool = false;
+    let mut is_identifier: bool = false;
+
+    while let Some(current) = tokens.advance() {
+        match current {
+            '"' => {
+                if is_text {
+                    // end quote
+                    continue;
+                } else {
+                    // start quote
+                    is_text = true;
+                    buffer = std::collections::VecDeque::new();
+                    while let Some(peek) = tokens.peek() {
+                        // If not the closing " continue
+                        if *peek != '"' || *peek != '\\' {
+                            buffer.push_back(tokens.advance().unwrap());
+                        } else if *peek == '\\' {
+                            // ignore the escape char
+                            tokens.advance();
+                            let string_current = match tokens.advance() {
+                                Some(c) => c,
+                                None => {
+                                    return Err(Box::new(MietteError::new("Tokenize Error: Expected token after escape character \\ but got nothing".to_string())));
+                                }
+                            };
+                            buffer.push_back(string_current);
+                        } else {
+                            // closing "
+                            is_text = false;
+                            let temp: String = buffer.clone().into_iter().collect();
+                            Token::add_token(
+                                &mut tokens.tokens,
+                                TokenKind::Text(temp.clone()),
+                                temp,
+                                tokens.current_line,
+                            );
+                            buffer.clear();
+                            break;
+                        }
+                    }
+                    continue;
+                }
+            }
+            '=' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Equals with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after equals but got nothing".to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // Double equals '=='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::EqualEqual,
+                        "==".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Equal,
+                        "=".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end equal '='
+            '>' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Gtreater with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after greater than token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // Greater equals '>='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::GreaterEqual,
+                        ">=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Greater,
+                        ">".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end greater '>'
+            '<' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Less than with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after Less Than token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // Less than equals '<='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::LessEqual,
+                        "<=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Less,
+                        "<".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end less '<'
+            '!' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Bang than with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after bang token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                if *peek == '=' {
+                    // bang than equals '!='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::BangEqual,
+                        "!=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Bang,
+                        "!".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end bang '!'
+            '\n' => {
+                let peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // new line than with nothing after
+                        Token::add_token(
+                            &mut tokens.tokens,
+                            TokenKind::EOF,
+                            "EOF".to_string(),
+                            tokens.current_line,
+                        );
+                        continue;
+                    }
+                };
+
+                if *peek == '=' {
+                    // bang than equals '!='
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::BangEqual,
+                        "!=".to_string(),
+                        tokens.current_line,
+                    );
+                } else {
+                    Token::add_token(
+                        &mut tokens.tokens,
+                        TokenKind::Bang,
+                        "!".to_string(),
+                        tokens.current_line,
+                    );
+                }
+            } // end bang '!'
+            c if c.is_ascii_digit() || c == '.' => {
+                if is_number {
+                } else {
+                    if is_text {
+                        // Part of a user string
+                    } else {
+                        // Can either be part of an identifier or number
+                        if is_identifier {
+                            buffer.push_back(c);
+                            continue;
+                        } else {
+                            // Probably start of a number
+                        }
+                    }
+                }
+            }
+            _ => {
+                continue;
+            }
+        };
+    }
+
+    Ok(tokens.tokens)
 }
 
 #[derive(Debug)]
