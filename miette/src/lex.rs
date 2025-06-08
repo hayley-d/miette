@@ -290,7 +290,154 @@ pub fn scan_tokens(
                         }
                     }
                 }
+            } // end si digit
+            '{' => {
+                    let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Bracket with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after left bracket '{' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::LeftBracket,
+                    "{{".to_string(),
+                    tokens.current_line,
+                );
+ 
             }
+            '}' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::RightBracket,
+                    "}}".to_string(),
+                    tokens.current_line,
+                );
+            } // end right bracket
+            '[' => {
+                    let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Square Bracket with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after left square bracket '[' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::LeftSBracket,
+                    "[".to_string(),
+                    tokens.current_line,
+                );
+            } // end left square bracket
+            ']' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::RightSBracket,
+                    "]".to_string(),
+                    tokens.current_line,
+                );
+            } // end right square bracket
+            '(' => {
+                    let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Parenthesis with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after left parenthesis '(' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::LeftParen,
+                    "(".to_string(),
+                    tokens.current_line,
+                );
+            } // end left parenthesis
+            ')' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::RightParen,
+                    ")".to_string(),
+                    tokens.current_line,
+                );
+            } // end right parenthesis
+            '+' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Plus,
+                    "+".to_string(),
+                    tokens.current_line,
+                );
+            } // end plus
+            '-' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Minus,
+                    "-".to_string(),
+                    tokens.current_line,
+                );
+            } // end minus
+            '/' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Slash,
+                    "/".to_string(),
+                    tokens.current_line,
+                );
+            } // end slash
+            '*' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Star,
+                    ")".to_string(),
+                    tokens.current_line,
+                );
+            } // end star
+            ',' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Comma,
+                    ",".to_string(),
+                    tokens.current_line,
+                );
+            } // end star
+            ':' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Colon,
+                    ":".to_string(),
+                    tokens.current_line,
+                );
+            } // end star
+            ';' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::SemiColon,
+                    ";".to_string(),
+                    tokens.current_line,
+                );
+            } // end semi colon 
+            '.' => {
+                Token::add_token(
+                    &mut tokens.tokens,
+                    TokenKind::Dot,
+                    ".".to_string(),
+                    tokens.current_line,
+                );
+            } // end dot 
+
             _ => {
                 continue;
             }
@@ -320,7 +467,6 @@ pub enum TokenKind {
     Colon,
     SemiColon,
     Dot,
-
     Bang,
     BangEqual,
     Equal,
