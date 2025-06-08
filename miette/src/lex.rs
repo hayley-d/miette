@@ -260,7 +260,7 @@ pub fn scan_tokens(
                 }
             } // end bang '!'
             '\n' => {
-                let peek: &char = match tokens.peek() {
+                let _peek: &char = match tokens.peek() {
                     Some(c) => c,
                     None => {
                         // new line than with nothing after
@@ -273,24 +273,8 @@ pub fn scan_tokens(
                         continue;
                     }
                 };
-
-                if *peek == '=' {
-                    // bang than equals '!='
-                    Token::add_token(
-                        &mut tokens.tokens,
-                        TokenKind::BangEqual,
-                        "!=".to_string(),
-                        tokens.current_line,
-                    );
-                } else {
-                    Token::add_token(
-                        &mut tokens.tokens,
-                        TokenKind::Bang,
-                        "!".to_string(),
-                        tokens.current_line,
-                    );
-                }
-            } // end bang '!'
+                continue;
+            } // end new line '\n'
             c if c.is_ascii_digit() || c == '.' => {
                 if is_number {
                 } else {
