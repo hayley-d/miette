@@ -321,15 +321,15 @@ pub fn scan_tokens(
             } // end right bracket
             '[' => {
                     let _peek: &char = match tokens.peek() {
-                    Some(c) => c,
-                    None => {
-                        // Square Bracket with nothing after
-                        return Err(Box::new(MietteError::new(
-                            "Lexer Error: Expected token after left square bracket '[' token but got nothing"
-                                .to_string(),
-                        )));
-                    }
-                };
+                        Some(c) => c,
+                        None => {
+                            // Square Bracket with nothing after
+                            return Err(Box::new(MietteError::new(
+                                "Lexer Error: Expected token after left square bracket '[' token but got nothing"
+                                    .to_string(),
+                            )));
+                        }
+                    };
 
                 Token::add_token(
                     &mut tokens.tokens,
@@ -374,6 +374,17 @@ pub fn scan_tokens(
                 );
             } // end right parenthesis
             '+' => {
+                let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Plus with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after plus operator '+' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
                 Token::add_token(
                     &mut tokens.tokens,
                     TokenKind::Plus,
@@ -382,6 +393,18 @@ pub fn scan_tokens(
                 );
             } // end plus
             '-' => {
+                let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Minus with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after minus operator '-' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+
                 Token::add_token(
                     &mut tokens.tokens,
                     TokenKind::Minus,
@@ -390,6 +413,18 @@ pub fn scan_tokens(
                 );
             } // end minus
             '/' => {
+                let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // slash with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after slash operator '/' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+
                 Token::add_token(
                     &mut tokens.tokens,
                     TokenKind::Slash,
@@ -398,6 +433,18 @@ pub fn scan_tokens(
                 );
             } // end slash
             '*' => {
+                let _peek: &char = match tokens.peek() {
+                    Some(c) => c,
+                    None => {
+                        // Star with nothing after
+                        return Err(Box::new(MietteError::new(
+                            "Lexer Error: Expected token after star operator '*' token but got nothing"
+                                .to_string(),
+                        )));
+                    }
+                };
+
+
                 Token::add_token(
                     &mut tokens.tokens,
                     TokenKind::Star,
